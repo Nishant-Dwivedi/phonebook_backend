@@ -1,18 +1,8 @@
 const cors = require("cors");
 const express = require("express");
 const app = express();
-const morgan = require("morgan");
-// json parser
-app.use(express.json());
-app.use(cors());
-app.use(
-  morgan(function (tokens, req, res) {
-    return `${tokens.method(
-      req,
-      res
-    )} ${tokens.url(req, res)} ${tokens.req(req, res, "content-length")} ${tokens.status(req, res)} ${tokens["response-time"](req, res)}ms ${JSON.stringify(req.body)})}`;
-  })
-);
+
+const PORT = process.env.PORT || 3001;
 let data = [
   {
     id: 1,
@@ -35,10 +25,16 @@ let data = [
     number: "39-23-6423122",
   },
 ];
-const PORT = process.env.PORT || 3001;
+
+// json parser for POST
+app.use("/api/persons",express.json());
+// cors, static frontend
+app.use(cors(), express.static("build"));
+
 app.listen(PORT, () => {
   console.log(`server running on port ${PORT}`);
 });
+// GET
 app.get("/", (req, res) => {
   console.log(req.body);
   res.send("<h1>Phonebook App</h1>");
@@ -49,7 +45,6 @@ app.get("/api/persons", (req, res) => {
 });
 app.get("/api/info", (req, res) => {
   console.log(req.body);
-
   const persons = data.length;
   res.send(`Phonebook has info for ${persons} people <br> ${new Date()}`);
 });
@@ -62,15 +57,16 @@ app.get("/api/persons/:id", (req, res) => {
     res.status(404).send("Note not found on the server!");
   }
 });
+// DELETE
 app.delete("/api/persons/:id", (req, res) => {
   const id = Number(req.params.id);
   data = data.filter((person) => person.id !== id);
+  console.log(data);
   res.status(204).end();
 });
 // POST
 app.post("/api/persons", (req, res) => {
   console.log(req.body);
-
   const name = req.body.name;
   if (name == undefined || req.body.number == undefined) {
     res
@@ -82,6 +78,7 @@ app.post("/api/persons", (req, res) => {
     const max = 10000;
     const id = Math.floor(Math.random() * (max - 5) + 5);
     data.push({ ...req.body, id });
-    res.json({ ...req.body, id });
+    res.json(data[data.length-1]);
+    console.log(data);
   }
 });
