@@ -1,30 +1,11 @@
 const cors = require("cors");
+require("dotenv").config();
 const express = require("express");
 const app = express();
-
+const Person = require("./mongo")
+const { default: mongoose } = require("mongoose");
 const PORT = process.env.PORT || 3001;
-let data = [
-  {
-    id: 1,
-    name: "Arto Hellas",
-    number: "040-123456",
-  },
-  {
-    id: 2,
-    name: "Ada Lovelace",
-    number: "39-44-5323523",
-  },
-  {
-    id: 3,
-    name: "Dan Abramov",
-    number: "12-43-234345",
-  },
-  {
-    id: 4,
-    name: "Mary Poppendieck",
-    number: "39-23-6423122",
-  },
-];
+
 
 // json parser for POST
 app.use("/api/persons",express.json());
@@ -34,28 +15,27 @@ app.use(cors(), express.static("build"));
 app.listen(PORT, () => {
   console.log(`server running on port ${PORT}`);
 });
-// GET
-app.get("/", (req, res) => {
-  console.log(req.body);
-  res.send("<h1>Phonebook App</h1>");
-});
+
 app.get("/api/persons", (req, res) => {
-  console.log(req.body);
-  res.json(data);
+  Person.find({}).then(data => {
+    res.json(data)
+  })
+
 });
+
 app.get("/api/info", (req, res) => {
-  console.log(req.body);
-  const persons = data.length;
-  res.send(`Phonebook has info for ${persons} people <br> ${new Date()}`);
+  let persons;
+  Person.find({}).then(data =>{
+    persons = data
+    res.send(`Phonebook has info for ${persons.length} people <br> ${new Date()}`);
+  })
 });
+
 app.get("/api/persons/:id", (req, res) => {
   const id = req.params.id;
-  const person = data.find((person) => person.id == id);
-  if (person) {
-    res.json(person);
-  } else {
-    res.status(404).send("Note not found on the server!");
-  }
+  Person.findById({_id : id}).then(result =>{
+    res.json(result)
+  }).catch(err => console.log(err.message))
 });
 // DELETE
 app.delete("/api/persons/:id", (req, res) => {
@@ -67,18 +47,18 @@ app.delete("/api/persons/:id", (req, res) => {
 // POST
 app.post("/api/persons", (req, res) => {
   console.log(req.body);
-  const name = req.body.name;
-  if (name == undefined || req.body.number == undefined) {
+  if (req.body.name == undefined || req.body.number == undefined) {
     res
       .status(400)
       .send("<p>Invalid format used for state's representation.</p>");
-  } else if (data.find((person) => person.name == name)) {
-    res.status(400).send("<p>Name already exists!</p>");
-  } else {
-    const max = 10000;
-    const id = Math.floor(Math.random() * (max - 5) + 5);
-    data.push({ ...req.body, id });
-    res.json(data[data.length-1]);
-    console.log(data);
+  } 
+  else {
+   const newPerson = new Person({
+    name: req.body.name,
+    number: req.body.number
+   })
+   newPerson.save().then(response => {
+    console.log(response);
+   }).catch(err=>console.log(err.message))
   }
 });
